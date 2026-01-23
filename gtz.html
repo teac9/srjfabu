@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欠款还款页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .flag-icon {
+            width: 20px;
+            height: 15px;
+            display: inline-block;
+            margin-right: 8px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .cny-flag {
+            background: linear-gradient(to bottom, #de2910 33.3%, #ffde00 33.3%, #ffde00 66.6%, #de2910 66.6%);
+        }
+        
+        .usd-flag {
+            background: linear-gradient(to bottom, 
+                #b22234 7.69%, white 7.69%, white 15.38%,
+                #b22234 15.38%, #b22234 23.08%, white 23.08%, white 30.77%,
+                #b22234 30.77%, #b22234 38.46%, white 38.46%, white 46.15%,
+                #b22234 46.15%, #b22234 53.85%, white 53.85%, white 61.54%,
+                #b22234 61.54%, #b22234 69.23%, white 69.23%, white 76.92%,
+                #b22234 76.92%, #b22234 84.62%, white 84.62%, white 92.31%,
+                #b22234 92.31%);
+            position: relative;
+        }
+        
+        .usd-flag:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 30%;
+            height: 46.15%;
+            background-color: #3c3b6e;
+        }
+        
+        .usd-flag:after {
+            content: "★";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            color: white;
+            font-size: 8px;
+            line-height: 1;
+        }
+        
+        .eur-flag {
+            background-color: #003399;
+            position: relative;
+        }
+        
+        .eur-flag:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 0%, transparent 15%, #FFCC00 15%, #FFCC00 20%, transparent 20%, transparent 40%, #FFCC00 40%, #FFCC00 45%, transparent 45%, transparent 55%, #FFCC00 55%, #FFCC00 60%, transparent 60%, transparent 80%, #FFCC00 80%, #FFCC00 85%, transparent 85%);
+        }
+        
+        .currency-option {
+            display: flex;
+            align-items: center;
+        }
+        
+        .qr-code-container {
+            transition: all 0.3s ease;
+        }
+        
+        .qr-code-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-4 md:p-6 font-sans">
+    <div class="max-w-4xl mx-auto">
+        <!-- 页面标题 -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2" id="pageTitle">欠款还款</h1>
+            <p class="text-gray-600" id="pageSubtitle">请核实以下还款信息并进行支付</p>
+        </header>
+        
+        <!-- 已还款提示（初始隐藏） -->
+        <div id="repaidMessage" class="hidden">
+            <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 text-center mb-8 fade-in">
+                <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-check text-green-500 text-3xl"></i>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">还款成功！</h2>
+                <p class="text-gray-600 mb-2">您已成功偿还欠款</p>
+                <p class="text-gray-700 font-medium mb-6">还款人：<span class="text-blue-600">高天择</span></p>
+                
+                <div class="max-w-md mx-auto bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 mb-8">
+                    <p class="text-gray-700 mb-2">还款金额：<span class="text-2xl font-bold text-green-600">2.20 元</span></p>
+                    <p class="text-gray-600 text-sm mb-4">人民币贰元贰角</p>
+                    <p class="text-gray-700 mb-2">还款时间：<span class="font-medium" id="repaymentTimeDisplay">2026年1月23日 17:44:50</span></p>
+                    <p class="text-gray-600 text-sm">交易已完成，感谢您的支付</p>
+                </div>
+                
+                <div class="flex justify-center space-x-4">
+                    <button id="viewReceiptBtn" class="px-6 py-3 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-receipt mr-2"></i>查看收据
+                    </button>
+                    <button id="backToHomeBtn" class="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-home mr-2"></i>返回首页
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 正常还款页面（初始显示） -->
+        <div id="repaymentPage">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 左侧：欠款信息与计算 -->
+                <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                    <!-- 欠款人信息 -->
+                    <div class="mb-8 pb-6 border-b border-gray-100">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-user text-blue-500 mr-3"></i>欠款人信息
+                        </h2>
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 flex items-center justify-center mr-4">
+                                <i class="fas fa-user text-blue-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-lg font-medium text-gray-800">高天择</p>
+                                <p class="text-gray-600">欠款人</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 币种切换 -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-globe text-green-500 mr-3"></i>币种选择
+                        </h2>
+                        <div class="relative">
+                            <select id="currencySelect" class="w-full p-3 border border-gray-300 rounded-lg appearance-none bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer">
+                                <option value="CNY" class="currency-option">
+                                    <span class="flag-icon cny-flag"></span>人民币 (CNY)
+                                </option>
+                                <option value="USD" class="currency-option">
+                                    <span class="flag-icon usd-flag"></span>美元 (USD)
+                                </option>
+                                <option value="EUR" class="currency-option">
+                                    <span class="flag-icon eur-flag"></span>欧元 (EUR)
+                                </option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 欠款计算明细 -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-calculator text-purple-500 mr-3"></i>还款明细计算
+                        </h2>
+                        
+                        <div class="space-y-3">
+                            <!-- 基础欠款 -->
+                            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">每月欠款</p>
+                                    <p class="text-sm text-gray-600">15元/月 × 6个月</p>
+                                </div>
+                                <p class="font-medium text-gray-800" id="baseDebt">90.00 <span class="currency-symbol">¥</span></p>
+                            </div>
+                            
+                            <!-- 利息计算 -->
+                            <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">利息</p>
+                                    <p class="text-sm text-gray-600">年利率780% × 6/12 = 390%</p>
+                                </div>
+                                <p class="font-medium text-gray-800" id="interest">351.00 <span class="currency-symbol">¥</span></p>
+                            </div>
+                            
+                            <!-- 本息合计 -->
+                            <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">本息合计</p>
+                                    <p class="text-sm text-gray-600">90 + 351 = 441元</p>
+                                </div>
+                                <p class="font-medium text-gray-800" id="totalWithInterest">441.00 <span class="currency-symbol">¥</span></p>
+                            </div>
+                            
+                            <!-- 优惠 -->
+                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">优惠</p>
+                                    <p class="text-sm text-gray-600">99.5% + 99.9%优惠</p>
+                                </div>
+                                <p class="font-medium text-gray-800" id="discount">-438.795 <span class="currency-symbol">¥</span></p>
+                            </div>
+                            
+                            <!-- 抹零 -->
+                            <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">抹零</p>
+                                    <p class="text-sm text-gray-600">抹去0.005元</p>
+                                </div>
+                                <p class="font-medium text-gray-800" id="rounding">-0.005 <span class="currency-symbol">¥</span></p>
+                            </div>
+                            
+                            <!-- 总计 -->
+                            <div class="flex justify-between items-center p-4 mt-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg">
+                                <div>
+                                    <p class="font-bold text-lg">总计应还金额</p>
+                                    <p class="text-sm opacity-90" id="totalText">人民币贰元贰角</p>
+                                </div>
+                                <p class="font-bold text-2xl" id="totalAmount">2.20 <span class="currency-symbol">¥</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 注意事项 -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 mb-2 flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>注意事项
+                        </h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• 请确认欠款人信息无误</li>
+                            <li>• 还款金额已包含所有费用</li>
+                            <li>• 支付完成后请截图保存凭证</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 右侧：支付信息 -->
+                <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 flex flex-col">
+                    <!-- 支付标题 -->
+                    <div class="mb-6 text-center">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">扫码支付</h2>
+                        <p class="text-gray-600">使用微信扫描下方二维码完成支付</p>
+                    </div>
+                    
+                    <!-- 二维码区域 -->
+                    <div class="qr-code-container flex-grow flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50 mb-6">
+                        <div class="mb-4 text-center">
+                            <p class="text-gray-700 mb-2">支付二维码</p>
+                            <p class="text-sm text-gray-500">请使用手机扫描</p>
+                        </div>
+                        
+                        <!-- 二维码图片 -->
+                        <div class="relative mb-4">
+                            <img 
+                                src="https://edgeoneimg.cdn.sn/i/69733f527309b_1769160530.png" 
+                                alt="还款二维码" 
+                                class="w-64 h-64 object-contain rounded-lg shadow-md"
+                                id="qrCodeImage"
+                            >
+                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-10 rounded-lg transition-all duration-300">
+                                <i class="fas fa-expand-alt text-white text-2xl opacity-0 hover:opacity-100 transition-opacity duration-300"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- 支付金额显示 -->
+                        <div class="text-center mb-4">
+                            <p class="text-sm text-gray-600 mb-1">支付金额</p>
+                            <p class="text-3xl font-bold text-blue-600" id="paymentAmount">2.20 <span class="currency-symbol">¥</span></p>
+                        </div>
+                        
+                        <!-- 支付方式图标 -->
+                        <div class="flex justify-center mb-6">
+                            <div class="flex items-center bg-green-50 px-4 py-2 rounded-lg">
+                                <i class="fab fa-weixin text-green-500 text-2xl mr-2"></i>
+                                <span class="text-gray-700 font-medium text-lg">微信支付</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 支付提示 -->
+                        <div class="text-center text-gray-600 text-sm">
+                            <p>扫描二维码后，请在微信中完成支付</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 分享按钮 -->
+                    <button id="shareBtn" class="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center mt-4">
+                        <i class="fas fa-share-alt mr-2"></i>分享还款链接
+                    </button>
+                    
+                    <!-- 支付提示 -->
+                    <div class="mt-6 pt-4 border-t border-gray-100">
+                        <div class="flex items-start">
+                            <i class="fas fa-shield-alt text-green-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <p class="font-medium text-gray-800 mb-1">安全支付保障</p>
+                                <p class="text-sm text-gray-600">您的支付信息已加密，确保资金安全。支付完成后系统将自动更新还款状态。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="mt-8 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+            <p>© 2026 元宝支付系统. 本页面仅用于展示还款功能.</p>
+            <p class="mt-1">技术支持: 元宝AI助手</p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== 配置区域 ====================
+        // 还款状态：true 表示已还款，false 表示未还款
+        const isRepaid = false;
+        
+        // 还款时间设置（请修改这里的值）
+        const repaymentTime = "2026年1月23日 17:44:50";
+        
+        // 汇率数据 - 根据今日汇率更新
+        // 1美元对人民币6.9929元，1欧元对人民币8.1900元
+        const exchangeRates = {
+            CNY: { symbol: '¥', rate: 1, name: '人民币', flagClass: 'cny-flag' },
+            USD: { symbol: '$', rate: 1 / 6.9929, name: '美元', flagClass: 'usd-flag' }, // 1人民币 = 0.1430美元
+            EUR: { symbol: '€', rate: 1 / 8.1900, name: '欧元', flagClass: 'eur-flag' }  // 1人民币 = 0.1221欧元
+        };
+        
+        // 原始金额 (人民币)
+        const originalAmounts = {
+            baseDebt: 90.00,
+            interest: 351.00,
+            totalWithInterest: 441.00,
+            discount: -438.795,
+            rounding: -0.005,
+            total: 2.20
+        };
+        // ==================== 配置结束 ====================
+        
+        // 获取DOM元素
+        const currencySelect = document.getElementById('currencySelect');
+        const baseDebtElement = document.getElementById('baseDebt');
+        const interestElement = document.getElementById('interest');
+        const totalWithInterestElement = document.getElementById('totalWithInterest');
+        const discountElement = document.getElementById('discount');
+        const roundingElement = document.getElementById('rounding');
+        const totalAmountElement = document.getElementById('totalAmount');
+        const paymentAmountElement = document.getElementById('paymentAmount');
+        const totalTextElement = document.getElementById('totalText');
+        const shareBtn = document.getElementById('shareBtn');
+        const qrCodeImage = document.getElementById('qrCodeImage');
+        const repaidMessage = document.getElementById('repaidMessage');
+        const repaymentPage = document.getElementById('repaymentPage');
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+        const repaymentTimeDisplay = document.getElementById('repaymentTimeDisplay');
+        const viewReceiptBtn = document.getElementById('viewReceiptBtn');
+        const backToHomeBtn = document.getElementById('backToHomeBtn');
+        
+        // 格式化金额，保留两位小数
+        function formatCurrency(amount) {
+            return parseFloat(amount).toFixed(2);
+        }
+        
+        // 初始化页面
+        function initPage() {
+            // 设置还款时间显示
+            repaymentTimeDisplay.textContent = repaymentTime;
+            
+            // 根据还款状态显示相应页面
+            if (isRepaid) {
+                showRepaidPage();
+            } else {
+                showRepaymentPage();
+            }
+            
+            // 初始化币种显示
+            updateCurrencyDisplay();
+        }
+        
+        // 显示已还款页面
+        function showRepaidPage() {
+            repaidMessage.classList.remove('hidden');
+            repaidMessage.classList.add('fade-in');
+            repaymentPage.classList.add('hidden');
+            
+            // 更新页面标题
+            pageTitle.textContent = '还款完成';
+            pageSubtitle.textContent = '您的欠款已全部还清';
+        }
+        
+        // 显示正常还款页面
+        function showRepaymentPage() {
+            repaymentPage.classList.remove('hidden');
+            repaidMessage.classList.add('hidden');
+            
+            // 恢复页面标题
+            pageTitle.textContent = '欠款还款';
+            pageSubtitle.textContent = '请核实以下还款信息并进行支付';
+        }
+        
+        // 中文金额大写转换函数
+        function toChineseNumber(amount) {
+            const chineseNumbers = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+            const chineseUnits = ['', '拾', '佰', '仟', '万', '拾', '佰', '仟', '亿'];
+            const decimalUnits = ['角', '分'];
+            
+            // 处理整数部分
+            let integerPart = Math.floor(amount);
+            let decimalPart = Math.round((amount - integerPart) * 100);
+            
+            if (integerPart === 0 && decimalPart === 0) {
+                return '零元';
+            }
+            
+            let result = '';
+            
+            // 整数部分
+            if (integerPart > 0) {
+                let integerStr = integerPart.toString();
+                let zeroFlag = false;
+                
+                for (let i = 0; i < integerStr.length; i++) {
+                    const digit = parseInt(integerStr[i]);
+                    const unitIndex = integerStr.length - i - 1;
+                    
+                    if (digit === 0) {
+                        zeroFlag = true;
+                    } else {
+                        if (zeroFlag) {
+                            result += '零';
+                            zeroFlag = false;
+                        }
+                        result += chineseNumbers[digit] + chineseUnits[unitIndex];
+                    }
+                }
+                
+                result += '元';
+            }
+            
+            // 小数部分
+            if (decimalPart > 0) {
+                const jiao = Math.floor(decimalPart / 10);
+                const fen = decimalPart % 10;
+                
+                if (jiao > 0) {
+                    result += chineseNumbers[jiao] + '角';
+                }
+                
+                if (fen > 0) {
+                    result += chineseNumbers[fen] + '分';
+                }
+            } else if (integerPart > 0) {
+                result += '整';
+            }
+            
+            return result;
+        }
+        
+        // 更新所有金额显示
+        function updateCurrencyDisplay() {
+            const selectedCurrency = currencySelect.value;
+            const rateInfo = exchangeRates[selectedCurrency];
+            
+            // 更新货币符号
+            document.querySelectorAll('.currency-symbol').forEach(el => {
+                el.textContent = rateInfo.symbol;
+            });
+            
+            // 更新各个金额（保留两位小数）
+            baseDebtElement.textContent = formatCurrency(originalAmounts.baseDebt * rateInfo.rate) + ' ';
+            interestElement.textContent = formatCurrency(originalAmounts.interest * rateInfo.rate) + ' ';
+            totalWithInterestElement.textContent = formatCurrency(originalAmounts.totalWithInterest * rateInfo.rate) + ' ';
+            discountElement.textContent = formatCurrency(originalAmounts.discount * rateInfo.rate) + ' ';
+            roundingElement.textContent = formatCurrency(originalAmounts.rounding * rateInfo.rate) + ' ';
+            
+            // 更新总计金额
+            const totalAmount = originalAmounts.total * rateInfo.rate;
+            totalAmountElement.textContent = formatCurrency(totalAmount) + ' ';
+            paymentAmountElement.textContent = formatCurrency(totalAmount) + ' ';
+            
+            // 更新中文金额大写
+            if (selectedCurrency === 'CNY') {
+                totalTextElement.textContent = toChineseNumber(originalAmounts.total);
+            } else {
+                // 对于外币，显示简单的大写说明
+                totalTextElement.textContent = `${rateInfo.name}金额: ${formatCurrency(totalAmount)} ${rateInfo.symbol}`;
+            }
+            
+            // 更新国旗显示
+            document.querySelectorAll('.flag-icon').forEach(flag => {
+                // 移除所有国旗类
+                flag.classList.remove('cny-flag', 'usd-flag', 'eur-flag');
+                // 添加当前选中国旗类
+                flag.classList.add(rateInfo.flagClass);
+            });
+        }
+        
+        // 分享按钮点击事件
+        shareBtn.addEventListener('click', function() {
+            const selectedCurrency = currencySelect.value;
+            const rateInfo = exchangeRates[selectedCurrency];
+            const amount = originalAmounts.total * rateInfo.rate;
+            
+            // 复制分享链接到剪贴板
+            const shareText = `高天择的欠款还款链接：需支付${formatCurrency(amount)}${rateInfo.symbol}，请扫描二维码完成支付。`;
+            
+            // 使用现代剪贴板API
+            navigator.clipboard.writeText(shareText).then(() => {
+                // 显示成功提示
+                const originalText = shareBtn.innerHTML;
+                shareBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已复制链接';
+                
+                setTimeout(() => {
+                    shareBtn.innerHTML = originalText;
+                }, 2000);
+            }).catch(err => {
+                // 备用方案
+                const textArea = document.createElement('textarea');
+                textArea.value = shareText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // 显示成功提示
+                const originalText = shareBtn.innerHTML;
+                shareBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已复制链接';
+                
+                setTimeout(() => {
+                    shareBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+        
+        // 查看收据按钮点击事件
+        viewReceiptBtn.addEventListener('click', function() {
+            const receiptWindow = window.open('', '_blank');
+            const selectedCurrency = currencySelect.value;
+            const rateInfo = exchangeRates[selectedCurrency];
+            const amount = originalAmounts.total * rateInfo.rate;
+            
+            receiptWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>还款收据</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20px; 
+                            max-width: 600px; 
+                            margin: 0 auto; 
+                        }
+                        .receipt { 
+                            border: 2px solid #000; 
+                            padding: 30px; 
+                            border-radius: 10px; 
+                        }
+                        .header { 
+                            text-align: center; 
+                            margin-bottom: 30px; 
+                        }
+                        .title { 
+                            font-size: 24px; 
+                            font-weight: bold; 
+                            margin-bottom: 10px; 
+                        }
+                        .info { 
+                            margin: 20px 0; 
+                        }
+                        .info-item { 
+                            display: flex; 
+                            justify-content: space-between; 
+                            margin: 10px 0; 
+                        }
+                        .total { 
+                            font-size: 20px; 
+                            font-weight: bold; 
+                            text-align: center; 
+                            margin: 30px 0; 
+                            color: #10b981; 
+                        }
+                        .footer { 
+                            text-align: center; 
+                            margin-top: 40px; 
+                            font-size: 12px; 
+                            color: #666; 
+                        }
+                        .stamp { 
+                            text-align: right; 
+                            margin-top: 40px; 
+                        }
+                        .stamp-text { 
+                            display: inline-block; 
+                            border: 2px solid red; 
+                            padding: 10px 20px; 
+                            transform: rotate(10deg); 
+                            color: red; 
+                            font-weight: bold; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt">
+                        <div class="header">
+                            <div class="title">还款收据</div>
+                            <div>元宝支付系统</div>
+                        </div>
+                        
+                        <div class="info">
+                            <div class="info-item">
+                                <span>收款方：</span>
+                                <span>元宝支付系统</span>
+                            </div>
+                            <div class="info-item">
+                                <span>付款方：</span>
+                                <span>高天择</span>
+                            </div>
+                            <div class="info-item">
+                                <span>交易时间：</span>
+                                <span>${repaymentTime}</span>
+                            </div>
+                            <div class="info-item">
+                                <span>交易流水号：</span>
+                                <span>YB202601231744501234</span>
+                            </div>
+                            <div class="info-item">
+                                <span>交易币种：</span>
+                                <span>${rateInfo.name} (${selectedCurrency})</span>
+                            </div>
+                        </div>
+                        
+                        <div class="total">
+                            支付金额：${formatCurrency(amount)} ${rateInfo.symbol}<br>
+                            ${selectedCurrency === 'CNY' ? '（人民币贰元贰角）' : `（${rateInfo.name}金额）`}
+                        </div>
+                        
+                        <div class="info">
+                            <div class="info-item">
+                                <span>支付方式：</span>
+                                <span>微信支付</span>
+                            </div>
+                            <div class="info-item">
+                                <span>交易状态：</span>
+                                <span style="color: green; font-weight: bold;">支付成功</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stamp">
+                            <div class="stamp-text">已结清</div>
+                        </div>
+                        
+                        <div class="footer">
+                            本收据由系统自动生成，具有法律效力<br>
+                            技术支持：元宝AI助手
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+        });
+        
+        // 返回首页按钮点击事件
+        backToHomeBtn.addEventListener('click', function() {
+            // 在实际应用中，这里可以跳转到其他页面
+            // 现在只是简单刷新页面
+            location.reload();
+        });
+        
+        // 二维码图片点击放大
+        qrCodeImage.addEventListener('click', function() {
+            const currentSrc = qrCodeImage.src;
+            const newWindow = window.open('', '_blank');
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>放大二维码</title>
+                    <style>
+                        body { 
+                            margin: 0; 
+                            padding: 20px; 
+                            display: flex; 
+                            justify-content: center; 
+                            align-items: center; 
+                            min-height: 100vh; 
+                            background-color: #f5f5f5; 
+                        }
+                        img { 
+                            max-width: 90vw; 
+                            max-height: 90vh; 
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+                            border-radius: 10px; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${currentSrc}" alt="放大二维码">
+                </body>
+                </html>
+            `);
+        });
+        
+        // 监听币种选择变化
+        currencySelect.addEventListener('change', updateCurrencyDisplay);
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 添加一些交互效果
+            const elements = document.querySelectorAll('.p-3.bg-blue-50, .p-3.bg-yellow-50, .p-3.bg-purple-50, .p-3.bg-green-50, .p-3.bg-red-50');
+            elements.forEach(el => {
+                el.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.transition = 'transform 0.2s ease';
+                });
+                
+                el.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+            
+            // 控制台显示汇率信息
+            console.log('当前汇率设置:');
+            console.log('1美元 = 6.9929人民币');
+            console.log('1欧元 = 8.1900人民币');
+            console.log('1人民币 = ' + exchangeRates.USD.rate.toFixed(4) + '美元');
+            console.log('1人民币 = ' + exchangeRates.EUR.rate.toFixed(4) + '欧元');
+        });
+    </script>
+</body>
+</html>
+
